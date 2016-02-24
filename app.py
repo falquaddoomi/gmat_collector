@@ -16,32 +16,38 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/ec2-user/projects/gmat_
 db = flask.ext.sqlalchemy.SQLAlchemy(app)
 
 
-# Create your Flask-SQLALchemy models as usual but with the following two
-# (reasonable) restrictions:
-#   1. They must have a primary key column of type sqlalchemy.Integer or
-#      type sqlalchemy.Unicode.
-#   2. They must have an __init__ method which accepts keyword arguments for
-#      all columns (the constructor in flask.ext.sqlalchemy.SQLAlchemy.Model
-#      supplies such a method, so you don't need to declare a new one).
-
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.Unicode, unique=True)
-    password = db.Column(db.Unicode, unique=True)
-    create_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    email = db.Column(db.Text, unique=True)
+    password = db.Column(db.Text)
 
-    reminders = db.relationship('Reminder', backref=db.backref('owner', lazy='dynamic'))
+    reminders = db.relationship('Reminder', backref=db.backref('student'), lazy='dynamic')
+    practices = db.relationship('Practice', backref=db.backref('student'), lazy='dynamic')
 
 
 class Reminder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    owner_id = db.Column(db.Integer, db.ForeignKey('student.id'))
-    remind_time = db.Column(db.Time)
-    create_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    remind_time = db.Column(db.String(40))
 
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
+
+
+class Practice(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    taken_on = db.Column(db.DateTime)
+    question_count = db.Column(db.Integer)
+    percent_correct = db.Column(db.String(40))
+    duration = db.Column(db.String(40))
+
+    reminder_id = db.Column(db.Integer, db.ForeignKey('reminder.id'))
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
 
 # Create the database tables.
-db.create_all()
+# db.create_all()
 
 # Create the Flask-Restless API manager.
 manager = flask.ext.restless.APIManager(app, flask_sqlalchemy_db=db)

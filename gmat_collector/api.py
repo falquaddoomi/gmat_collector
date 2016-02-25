@@ -1,12 +1,10 @@
-import flask
-import flask.ext.sqlalchemy
-import flask.ext.restless
+from gmat_collector import app
 
+import flask.ext.restless
+import flask.ext.sqlalchemy
 import datetime
 
-app = flask.Flask(__name__)
 db = flask.ext.sqlalchemy.SQLAlchemy(app)
-
 
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -37,3 +35,14 @@ class Practice(db.Model):
 
     reminder_id = db.Column(db.Integer, db.ForeignKey('reminder.id'))
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
+
+# Create the Flask-Restless API manager.
+manager = flask.ext.restless.APIManager(app, flask_sqlalchemy_db=db)
+
+# Create API endpoints, which will be available at /api/<tablename> by
+# default. Allowed HTTP methods can be specified as well.
+manager.create_api(Student, methods=['GET', 'POST'])
+manager.create_api(Reminder, methods=['GET', 'POST'])
+manager.create_api(Practice, methods=['GET', 'POST'])
+
+

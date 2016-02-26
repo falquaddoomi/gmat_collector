@@ -55,7 +55,7 @@ def scrape_veritas(username, password):
 
 
 @celery.task()
-def scrape_student(student_id):
+def update_student(student_id, practice_set):
     student = Student.query.get(student_id)
 
     result = scrape_veritas.delay(student.email, student.password)
@@ -81,6 +81,11 @@ def scrape_student(student_id):
 @celery.task()
 def scrape_all_students():
     # iterate through each student, launching a scrape task if they've not been scraped recently
-    for student in Student.query.filter(datetime.now() - Student.last_scraped > timedelta(minutes=15)):
+    pending_students = Student.query.filter(
+        (Student.last_scraped == None) |
+        (datetime.now() - Student.last_scraped > timedelta(minutes=15))
+    )
+
+    for student in pending_students:
         result = scrape_student.delay(student.id)
         result.wait()

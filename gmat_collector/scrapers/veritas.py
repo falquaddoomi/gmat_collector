@@ -5,6 +5,7 @@ from scrapy.http.request.form import FormRequest
 from dateutil.parser import parse as parse_datetime
 from dateparser.date import DateDataParser
 
+
 class PracticeSession(scrapy.Item):
     student = scrapy.Field()
     quiz_index = scrapy.Field()
@@ -20,7 +21,8 @@ class VeritasScraper(scrapy.Spider):
     start_urls = ['https://www.veritasprep.com/login/']
     ddp = DateDataParser()
 
-    def __init__(self, username, password):
+    def __init__(self, username, password, **kwargs):
+        super(VeritasScraper, self).__init__(**kwargs)
         self.username = username
         self.password = password
 
@@ -42,13 +44,14 @@ class VeritasScraper(scrapy.Spider):
     def parse_practices(self, response):
         # body > div.container > div.page-body > table > tbody
         practices = response.xpath('/html/body/div[2]/div[3]/table/tbody/tr')
+        total = len(practices)
 
         for i, row in enumerate(practices):
             cells = [x.strip() for x in row.css('td::text').extract() if x.strip() != '']
 
             r = PracticeSession()
             r['student'] = self.username
-            r['quiz_index'] = i
+            r['quiz_index'] = total-i
 
             # attempt to see if the date in parentheses is more specific
             # than the month-day specifier (e.g. 'hours ago'), and use it if so.

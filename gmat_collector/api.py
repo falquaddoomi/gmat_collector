@@ -1,13 +1,17 @@
-from sqlalchemy import desc
-
-from gmat_collector import app
-
 import flask.ext.restless
 import flask.ext.sqlalchemy
 import datetime
 
+from sqlalchemy import desc
+
+from gmat_collector import app
+
 db = flask.ext.sqlalchemy.SQLAlchemy(app)
 
+
+# =====================================================================================================================
+# === models
+# =====================================================================================================================
 
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -54,6 +58,10 @@ class Practice(db.Model):
             .filter(Reminder.created_at < self.created_at)\
             .first()
 
+
+# =====================================================================================================================
+# === general api configuration
+# =====================================================================================================================
 
 # Create the Flask-Restless API manager.
 manager = flask.ext.restless.APIManager(app, flask_sqlalchemy_db=db)

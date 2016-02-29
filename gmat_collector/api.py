@@ -38,7 +38,7 @@ class Reminder(db.Model):
 
 
 class Practice(db.Model):
-    __table_args__ = ( db.UniqueConstraint('quiz_index', 'student_id'), { } )
+    __table_args__ = ( db.UniqueConstraint('quiz_index', 'student_id'), {})
 
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
@@ -72,7 +72,6 @@ manager.create_api(Student, methods=['GET', 'POST'],
                    exclude_columns=['password', 'reminders'],
                    include_methods=['active_reminder'])
 manager.create_api(Reminder, methods=['GET', 'POST'])
-manager.create_api(Practice, methods=['GET', 'POST'],
-                   include_methods=['reminder_when_taken'])
+# manager.create_api(Practice, methods=['GET'], include_methods=['reminder_when_taken'])
 
 

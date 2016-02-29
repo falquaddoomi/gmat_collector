@@ -61,6 +61,12 @@ SPIDER_FILE = "%s/gmat_collector/scrapers/veritas.py" % BASE
 
 
 @celery.task()
+def ping():
+    print "ping() called, sending pong..."
+    return "pong!"
+
+
+@celery.task()
 def scrape_veritas(username, password):
     cmd = "%(cmd)s runspider %(spider_file)s -a username=%(username)s -a password=%(password)s -o - -t json" % {
         'cmd': SCRAPY_BIN,
@@ -98,14 +104,14 @@ def update_student(practice_set, student_id):
 
 
 @celery.task()
-def scrape_all_students():
+def scrape_all_students(force=False):
     # iterate through each student, launching a scrape task if they've not been scraped recently
     pending_students = Student.query.filter(
         (Student.last_scraped == None) |
-        (datetime.now() - Student.last_scraped > timedelta(minutes=15))
-    )
+        (datetime.now() - Student.last_scraped > timedelta(minutes=5))
+    ) if not force else Student.query
 
-    logger.info("Scraping practice sessions for %d/%d students" % (pending_students.count(), Student.query.count()))
+    print "Scraping practice sessions for %d/%d students!" % (pending_students.count(), Student.query.count())
 
     # create a group of acquire->store chains, which will all be executed in parallel
     tasks = group(scrape_veritas.s(student.email, student.password) | update_student.s(student.id)

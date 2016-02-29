@@ -38,7 +38,7 @@ app.config.update(
     CELERYBEAT_SCHEDULE={
         'scrape-all-students': {
             'task': 'gmat_collector.tasks.scrape_all_students',
-            'schedule': crontab(minute='*/3')
+            'schedule': crontab(minute='*/15')
         },
     },
     # because apparently everything else is insecure :|

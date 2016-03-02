@@ -51,7 +51,7 @@ class VeritasScraper(scrapy.Spider):
 
             r = PracticeSession()
             r['student'] = self.username
-            r['quiz_index'] = total-i
+            r['quiz_index'] = total - i
 
             # attempt to see if the date in parentheses is more specific
             # than the month-day specifier (e.g. 'hours ago'), and use it if so.
@@ -70,4 +70,3 @@ class VeritasScraper(scrapy.Spider):
             r['duration'] = cells[3]
 
             yield r
-

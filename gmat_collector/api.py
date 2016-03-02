@@ -1,62 +1,27 @@
 import flask.ext.restless
 import flask.ext.sqlalchemy
-import datetime
-
-from sqlalchemy import desc
+from dateutil.parser import parse
 
 from gmat_collector import app
-
-db = flask.ext.sqlalchemy.SQLAlchemy(app)
+from gmat_collector.models import db, Student, Reminder
+from gmat_collector.utils import generate_code
+from gmat_collector.tasks import associate_veritas_account
 
 
 # =====================================================================================================================
-# === models
+# === event handlers
 # =====================================================================================================================
 
-class Student(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    last_scraped = db.Column(db.DateTime, default=None)
-    email = db.Column(db.Text, unique=True)
-    password = db.Column(db.Text)
+def post_create_user(result=None, **kw):
+    # create a veritas account, which sets the details on the created user object eventually
+    print "Made a user: %s" % str(result)
 
-    reminders = db.relationship('Reminder', backref=db.backref('student'), lazy='dynamic')
-    practices = db.relationship('Practice', backref=db.backref('student'), lazy='dynamic')
+    created_on = parse(result['created_at'])
 
-    def active_reminder(self):
-        return self.reminders\
-            .order_by(desc(Reminder.created_at))\
-            .first()
-
-
-class Reminder(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    remind_time = db.Column(db.String(40))
-
-    student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
-
-
-class Practice(db.Model):
-    __table_args__ = ( db.UniqueConstraint('quiz_index', 'student_id'), {})
-
-    id = db.Column(db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-
-    quiz_index = db.Column(db.Integer)
-    taken_on = db.Column(db.DateTime)
-    question_count = db.Column(db.Integer)
-    percent_correct = db.Column(db.String(40))
-    duration = db.Column(db.String(40))
-
-    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
-
-    def reminder_when_taken(self):
-        # look up the corresponding student
-        return self.student.reminders\
-            .order_by(desc(Reminder.created_at))\
-            .filter(Reminder.created_at < self.created_at)\
-            .first()
+    username = generate_code(result['id']+1234, created_on)
+    password = generate_code(result['id']+4567, created_on, reverse_params=True)
+    result = associate_veritas_account.delay(result['id'], username, password)
+    result.wait()
 
 
 # =====================================================================================================================
@@ -69,9 +34,12 @@ manager = flask.ext.restless.APIManager(app, flask_sqlalchemy_db=db)
 # Create API endpoints, which will be available at /api/<tablename> by
 # default. Allowed HTTP methods can be specified as well.
 manager.create_api(Student, methods=['GET', 'POST'],
-                   exclude_columns=['password', 'reminders'],
-                   include_methods=['active_reminder'])
+                   exclude_columns=['reminders'],
+                   include_methods=['active_reminder', 'code'],
+                   postprocessors={
+                       'POST': [post_create_user]
+                   })
+
 manager.create_api(Reminder, methods=['GET', 'POST'])
+
 # manager.create_api(Practice, methods=['GET'], include_methods=['reminder_when_taken'])
-
-

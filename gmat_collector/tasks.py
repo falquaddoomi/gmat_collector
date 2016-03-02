@@ -9,8 +9,9 @@ from celery import Celery, group
 from celery.utils.log import get_task_logger
 
 from gmat_collector import app
-from gmat_collector.api import db, Student, Practice
+from gmat_collector.models import db, Student, Practice, VeritasAccount
 
+SCRAPE_BACKOFF_MINUTES = 15 # amount of minutes after scraping to not re-scrape a user's data
 
 # =====================================================================================================================
 # === general celery app configuration
@@ -38,7 +39,7 @@ app.config.update(
     CELERYBEAT_SCHEDULE={
         'scrape-all-students': {
             'task': 'gmat_collector.tasks.scrape_all_students',
-            'schedule': crontab(minute='*/15')
+            'schedule': crontab(minute='*/%d' % SCRAPE_BACKOFF_MINUTES)
         },
     },
     # because apparently everything else is insecure :|
@@ -58,12 +59,42 @@ logger = get_task_logger(__name__)
 BASE = "/home/ec2-user/projects/gmat_collector/"
 SCRAPY_BIN = "%s/.venv/bin/scrapy" % BASE
 SPIDER_FILE = "%s/gmat_collector/scrapers/veritas.py" % BASE
+ACCT_SPIDER_FILE = "%s/gmat_collector/scrapers/account_creator.py" % BASE
 
 
 @celery.task()
 def ping():
     print "ping() called, sending pong..."
     return "pong!"
+
+
+@celery.task()
+def associate_veritas_account(student_id, username, password):
+    student = Student.query.get(student_id)
+
+    cmd = "%(cmd)s runspider %(spider_file)s -a username=%(username)s -a password=%(password)s -o - -t json" % {
+        'cmd': SCRAPY_BIN,
+        'spider_file': ACCT_SPIDER_FILE,
+        'username': username,
+        'password': password
+    }
+    result = subprocess.check_output(cmd.split())
+
+    try:
+        creds = json.loads(result)[0]
+
+        print "Received credentials: %s" % str(creds)
+
+        # create a veritasaccount model and associate it with this student
+        account = VeritasAccount(student=student, email=creds['email'], password=creds['password'])
+        db.session.add(account)
+        db.session.commit()
+
+        return creds
+
+    except IndexError or ValueError:
+        logger.warn("Couldn't create account for student ID %d, continuing..." % student_id)
+        return None
 
 
 @celery.task()
@@ -76,7 +107,11 @@ def scrape_veritas(username, password):
     }
     result = subprocess.check_output(cmd.split())
 
-    return json.loads(result)
+    try:
+        return json.loads(result)
+    except ValueError:
+        logger.warn("Couldn't scrape practice sets for %s, continuing..." % username)
+        return []
 
 
 @celery.task()
@@ -108,7 +143,7 @@ def scrape_all_students(force=False):
     # iterate through each student, launching a scrape task if they've not been scraped recently
     pending_students = Student.query.filter(
         (Student.last_scraped == None) |
-        (datetime.now() - Student.last_scraped > timedelta(minutes=5))
+        (datetime.now() - Student.last_scraped > timedelta(minutes=SCRAPE_BACKOFF_MINUTES))
     ) if not force else Student.query
 
     print "Scraping practice sessions for %d/%d students!" % (pending_students.count(), Student.query.count())

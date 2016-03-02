@@ -9,5 +9,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/ec2-user/projects/gmat_
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 import gmat_collector.tasks
+import gmat_collector.models
 import gmat_collector.api
 import gmat_collector.views

@@ -17,26 +17,24 @@ class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     last_scraped = db.Column(db.DateTime, default=None)
-    # email = db.Column(db.Text, unique=True)
-    # password = db.Column(db.Text)
+    code = db.Column(db.Text, unique=True)
 
-    account_id = db.Column(db.Integer, db.ForeignKey("veritas_account.id"))
-    account = db.relationship("VeritasAccount",
-                              backref=db.backref("student", uselist=False, cascade="all, delete-orphan", single_parent=True))
-    reminders = db.relationship('Reminder',
-                                backref=db.backref('student', cascade="all, delete-orphan", single_parent=True),
+    account = db.relationship("VeritasAccount", uselist=False, cascade="all, delete-orphan",
+                              backref=db.backref("student"))
+    reminders = db.relationship('Reminder', cascade="all, delete-orphan",
+                                backref=db.backref('student'),
                                 lazy='dynamic')
-    practices = db.relationship('Practice',
-                                backref=db.backref('student', cascade="all, delete-orphan", single_parent=True),
+    practices = db.relationship('Practice', cascade="all, delete-orphan",
+                                backref=db.backref('student'),
                                 lazy='dynamic')
-
-    def code(self):
-        return generate_code(self.id, self.created_at)
 
     def active_reminder(self):
         return self.reminders \
             .order_by(desc(Reminder.created_at)) \
             .first()
+
+    def __repr__(self):
+        return "<Student w/Code: %s>" % self.code
 
 
 class VeritasAccount(db.Model):
@@ -44,13 +42,14 @@ class VeritasAccount(db.Model):
     email = db.Column(db.Text, unique=True)
     password = db.Column(db.Text)
 
+    student_id = db.Column(db.Integer, db.ForeignKey("student.id"), nullable=False)
 
 class Reminder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     remind_time = db.Column(db.String(40))
 
-    student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
 
 
 class Practice(db.Model):
@@ -73,3 +72,7 @@ class Practice(db.Model):
             .order_by(desc(Reminder.created_at)) \
             .filter(Reminder.created_at < self.created_at) \
             .first()
+
+
+# make the database if it doesn't already exist
+db.create_all()

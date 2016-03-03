@@ -20,10 +20,14 @@ class VeritasAccountCreator(scrapy.Spider):
     def parse(self, response):
         self.email = '%s_gmat@gmail.com' % self.username
 
-        yield FormRequest.from_response(
+        fr = FormRequest.from_response(
             response=response,
             formxpath='//*[@id="registerForm"]',
             formdata={
+                'action': 'register',
+                'redirect': 'ajax',
+                'source': 'Checkout',
+                'SFproductID': '',
                 'first_name': self.username,
                 'last_name': self.username,
                 'username': self.email,
@@ -31,7 +35,9 @@ class VeritasAccountCreator(scrapy.Spider):
             },
             callback=self.account_created
         )
+        fr = fr.replace(url="https://www.veritasprep.com/checkout/LIBRARY/auth/AEntry.php")
+
+        yield fr
 
     def account_created(self, response):
-        print "Response: %s" % str(response)
         return {'email': self.email, 'password': self.password}

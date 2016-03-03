@@ -10,10 +10,13 @@ def hello_world():
     return 'Hello World!'
 
 
-@app.route('/scrape/<user_id>')
-def scrape_veritas(user_id):
-    s = Student.query.get(user_id)
-    chain = tasks.scrape_veritas.s(s.email, s.password) | tasks.update_student.s(user_id)
-    result = chain()
+@app.route('/scrape/<user_code>')
+def scrape_veritas(user_code):
+    try:
+        student = Student.query.filter(Student.code == user_code)[0]
+        chain = tasks.scrape_veritas.s(student.account.email, student.account.password) | tasks.update_student.s(student.id)
+        result = chain()
 
-    return jsonify({'practices_updated': result.wait()})
+        return jsonify({'practices_updated': result.wait()})
+    except Exception as ex:
+        return jsonify({'error': str(ex)})

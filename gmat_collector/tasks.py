@@ -142,13 +142,15 @@ def update_student(practice_set, student_id):
 def scrape_all_students(force=False):
     # iterate through each student, launching a scrape task if they've not been scraped recently
     pending_students = Student.query.filter(
-        (Student.last_scraped == None) |
-        (datetime.now() - Student.last_scraped > timedelta(minutes=SCRAPE_BACKOFF_MINUTES))
+        (Student.account != None) & (
+            (Student.last_scraped == None) |
+            (datetime.now() - Student.last_scraped > timedelta(minutes=SCRAPE_BACKOFF_MINUTES))
+        )
     ) if not force else Student.query
 
     print "Scraping practice sessions for %d/%d students!" % (pending_students.count(), Student.query.count())
 
     # create a group of acquire->store chains, which will all be executed in parallel
-    tasks = group(scrape_veritas.s(student.email, student.password) | update_student.s(student.id)
+    tasks = group(scrape_veritas.s(student.account.email, student.account.password) | update_student.s(student.id)
                   for student in pending_students)
     tasks.delay()

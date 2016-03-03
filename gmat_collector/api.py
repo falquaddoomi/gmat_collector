@@ -1,6 +1,7 @@
 import flask.ext.restless
 import flask.ext.sqlalchemy
 from dateutil.parser import parse
+from datetime import datetime
 
 from gmat_collector import app
 from gmat_collector.models import db, Student, Reminder
@@ -11,6 +12,9 @@ from gmat_collector.tasks import associate_veritas_account
 # =====================================================================================================================
 # === event handlers
 # =====================================================================================================================
+
+def pre_create_user(data=None, **kw):
+    data['code'] = generate_code(1, datetime.now())
 
 def post_create_user(result=None, **kw):
     # create a veritas account, which sets the details on the created user object eventually
@@ -34,8 +38,12 @@ manager = flask.ext.restless.APIManager(app, flask_sqlalchemy_db=db)
 # Create API endpoints, which will be available at /api/<tablename> by
 # default. Allowed HTTP methods can be specified as well.
 manager.create_api(Student, methods=['GET', 'POST'],
+                   primary_key='code',
                    exclude_columns=['reminders'],
                    include_methods=['active_reminder', 'code'],
+                   preprocessors={
+                     'POST': [pre_create_user]
+                   },
                    postprocessors={
                        'POST': [post_create_user]
                    })

@@ -3,4 +3,5 @@ Thumbs.db
 *.pyc
 *.log
 /.idea
+/celerybeat-schedule
 *.db

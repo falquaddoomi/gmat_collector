@@ -25,6 +25,9 @@ class Student(db.Model):
     last_scraped = db.Column(db.DateTime, nullable=True, default=None)
     code = db.Column(db.Text, unique=True)
 
+    # indicates why this user was created, e.g. for a study, as a test, etc.
+    reason_for_creation = db.Column(db.String, nullable=True, default='unspecified')
+
     has_deadline = db.Column(db.Boolean, default=False)
     has_contingency = db.Column(db.Boolean, default=False)
 
@@ -51,14 +54,14 @@ class VeritasAccount(db.Model):
     email = db.Column(db.Text, unique=True)
     password = db.Column(db.Text)
 
-    student_id = db.Column(db.Integer, db.ForeignKey("student.id"), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey("student.id", ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
 class Reminder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     remind_time = db.Column(db.String(40))
 
-    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
 
 class Practice(db.Model):
@@ -73,7 +76,7 @@ class Practice(db.Model):
     percent_correct = db.Column(db.String(40))
     duration = db.Column(db.String(40))
 
-    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     def reminder_when_taken(self):
         # look up the corresponding student

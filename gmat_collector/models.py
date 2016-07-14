@@ -7,6 +7,12 @@ from sqlalchemy import desc
 from gmat_collector import app
 from gmat_collector.utils import generate_code
 
+app.config.update(
+    # SQLALCHEMY_DATABASE_URI='sqlite:///%s/database.db' % filepath,
+    SQLALCHEMY_DATABASE_URI='postgresql:///gmat_collector',
+    SQLALCHEMY_TRACK_MODIFICATIONS=False
+)
+
 db = flask.ext.sqlalchemy.SQLAlchemy(app)
 
 # =====================================================================================================================
@@ -16,8 +22,11 @@ db = flask.ext.sqlalchemy.SQLAlchemy(app)
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    last_scraped = db.Column(db.DateTime, default=None)
+    last_scraped = db.Column(db.DateTime, nullable=True, default=None)
     code = db.Column(db.Text, unique=True)
+
+    has_deadline = db.Column(db.Boolean, default=False)
+    has_contingency = db.Column(db.Boolean, default=False)
 
     account = db.relationship("VeritasAccount", uselist=False, cascade="all, delete-orphan",
                               backref=db.backref("student"))
@@ -75,4 +84,4 @@ class Practice(db.Model):
 
 
 # make the database if it doesn't already exist
-db.create_all()
+# db.create_all()

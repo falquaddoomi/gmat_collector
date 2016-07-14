@@ -13,7 +13,7 @@ def hello_world():
 @app.route('/scrape/<user_code>')
 def scrape_veritas(user_code):
     try:
-        student = Student.query.filter(Student.code == user_code)[0]
+        student = Student.query.filter(Student.code == user_code).first()
         chain = tasks.scrape_veritas.s(student.account.email, student.account.password) | tasks.update_student.s(student.id)
         result = chain()
 

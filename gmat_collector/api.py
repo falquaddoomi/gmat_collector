@@ -25,7 +25,7 @@ def post_create_user(result=None, **kw):
     username = generate_code(result['id']+1234, created_on)
     password = generate_code(result['id']+4567, created_on, reverse_params=True)
     result = associate_veritas_account.delay(result['id'], username, password)
-    result.wait()
+    # result.wait()
 
 
 # =====================================================================================================================

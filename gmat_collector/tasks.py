@@ -72,6 +72,8 @@ def ping():
 def associate_veritas_account(student_id, username, password):
     student = Student.query.get(student_id)
 
+    print "About to get credentials for student %d..." % student_id
+
     cmd = "%(cmd)s runspider %(spider_file)s -a username=%(username)s -a password=%(password)s -o - -t json" % {
         'cmd': SCRAPY_BIN,
         'spider_file': ACCT_SPIDER_FILE,

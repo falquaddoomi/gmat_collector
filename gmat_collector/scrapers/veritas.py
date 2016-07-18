@@ -43,11 +43,16 @@ class VeritasScraper(scrapy.Spider):
 
     def parse_practices(self, response):
         # body > div.container > div.page-body > table > tbody
-        practices = response.xpath('/html/body/div[2]/div[3]/table/tbody/tr')
+        # practices = response.xpath('/html/body/div[2]/div[3]/table/tbody/tr')
+        practices = response.xpath('//*[@id="primary"]/table/tbody/tr')
         total = len(practices)
 
         for i, row in enumerate(practices):
             cells = [x.strip() for x in row.css('td::text').extract() if x.strip() != '']
+            self.log("Cells: %s" % str(cells))
+
+            if cells[2] == 'Not finished':
+                continue
 
             r = PracticeSession()
             r['student'] = self.username

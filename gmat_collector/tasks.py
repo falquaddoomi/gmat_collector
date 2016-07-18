@@ -111,7 +111,8 @@ def scrape_veritas(username, password):
 
     try:
         return json.loads(result)
-    except ValueError:
+    except ValueError as ex:
+        logger.warn("ValueError encountered during scrape: %s" % str(ex))
         logger.warn("Couldn't scrape practice sets for %s, continuing..." % username)
         return []
 

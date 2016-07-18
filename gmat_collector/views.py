@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify, render_template
 
 from gmat_collector import app
 import tasks
@@ -7,7 +7,8 @@ from gmat_collector.models import Student
 
 @app.route('/')
 def hello_world():
-    return 'Hello World!'
+    # return 'hello gmat'
+    return render_template('index.html')
 
 
 @app.route('/scrape/<user_code>')

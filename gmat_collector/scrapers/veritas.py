@@ -51,7 +51,7 @@ class VeritasScraper(scrapy.Spider):
             cells = [x.strip() for x in row.css('td::text').extract() if x.strip() != '']
             self.log("Cells: %s" % str(cells))
 
-            if cells[2] == 'Not finished':
+            if 'Not finished' in cells[2]:
                 continue
 
             r = PracticeSession()

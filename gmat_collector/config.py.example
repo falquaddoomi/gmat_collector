@@ -1,0 +1,4 @@
+# edit settings and rename this file to config.py !!!
+
+DASH_USERNAME='admin_username_here'
+DASH_PASSWORD='admin_password_here'

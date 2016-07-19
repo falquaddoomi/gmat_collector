@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block subsection %}:: user list{% endblock %}
+
+{% block script %}
+    <script type="text/javascript">
+    $(document).ready(function() {
+        $('#users-table').DataTable({
+            paging: false
+        });
+
+{#        $(".practice-displayer").click(function() {#}
+{#            $(".practice-list:visible").not("#" + $(this).data("target-id") + "-practice").hide();#}
+{#            $("#" + $(this).data("target-id") + "-practice").toggle(200);#}
+{#        });#}
+    });
+    </script>
+{% endblock %}
+
+{% block content %}
+<h1>List of All Students</h1>
+
+<p>Below is a list of all the registered Gmat students and their practice history.</p>
+
+<table id="users-table" class="table table-striped" style="margin-top: 1em;">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Code</th>
+            <th>Email</th>
+            <th>Password</th>
+            <th>Has Contingency</th>
+            <th>Has Deadline</th>
+            <th>Last Practice</th>
+{#            <th>&nbsp;</th>#}
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for user in users %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ user.code }}</td>
+                <td>{{ user.account.email }}</td>
+                <td>{{ user.account.password }}</td>
+                <td>{{ user.has_contingency }}</td>
+                <td>{{ user.has_deadline }}</td>
+                <td>{% if user.last_practice().taken_on %}{{ user.last_practice().taken_on.strftime('%Y/%m/%d, %-I:%M %p') }}{% endif %}</td>
+{#                <td>(<a class="practice-displayer" data-target-id="{{ user.id }}" href="#">view practices</a>)</td>#}
+            </tr>
+
+{#            <tr id="{{ user.id }}-practice" class="practice-list" style="display: none;">#}
+{#                <td colspan="6" style="border-left: solid 5px #aaa; padding-left: 10px;">#}
+{#                    <table class="table table-bordered">#}
+{#                        <tr>#}
+{#                            <th>Taken on</th>#}
+{#                            <th>Reminder When Taken</th>#}
+{#                            <th>Question Count</th>#}
+{#                            <th>Score</th>#}
+{#                            <th>Duration</th>#}
+{#                        </tr>#}
+{##}
+{#                        {% for practice in user.practices %}#}
+{#                            <tr>#}
+{#                                <td>{% if practice.taken_on %}{{ practice.taken_on.strftime('%Y/%m/%d, %-I:%M %p') }}{% endif %}</td>#}
+{#                                <td>#}
+{#                                    {% with remind_time = practice.reminder_when_taken() %}#}
+{#                                        {% if remind_time %}#}
+{#                                            {{ remind_time.remind_time_normalized().strftime('%-I:%M %p') }}#}
+{#                                        {% else %}#}
+{#                                            <i>no practice specified</i>#}
+{#                                        {% endif %}#}
+{#                                    {% endwith %}#}
+{#                                </td>#}
+{#                                <td>{{ practice.question_count }}</td>#}
+{#                                <td>{{ practice.percent_correct }}</td>#}
+{#                                <td>{{ practice.duration }}</td>#}
+{#                            </tr>#}
+{#                        {% endfor %}#}
+{#                    </table>#}
+{#                </td>#}
+{#            </tr>#}
+        {% endfor %}
+    </tbody>
+</table>
+
+<footer style="margin-top: 1em; margin-bottom: 2em; color: #aaa; font-size: smaller; text-align: right;">(c) smalldatalab 2016</footer>
+{% endblock %}

@@ -1,4 +1,7 @@
 from hashids import Hashids
+from functools import wraps
+from flask import request, Response
+import config
 
 hashids = Hashids(salt="gmat_collector")
 
@@ -39,3 +42,32 @@ class ReverseProxied(object):
 def generate_code(student_id, created_at, reverse_params=False):
     props = (int(created_at.strftime('%s')), student_id)
     return hashids.encode(*(props if not reverse_params else reversed(props)))
+
+
+# ================================================
+# = basic auth view wrapper below
+# ================================================
+
+def check_auth(username, password):
+    """This function is called to check if a username /
+    password combination is valid.
+    """
+    return username == config.DASH_USERNAME and password == config.DASH_PASSWORD
+
+
+def authenticate():
+    """Sends a 401 response that enables basic auth"""
+    return Response(
+    'Could not verify your access level for that URL.\n'
+    'You have to login with proper credentials', 401,
+    {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+
+def requires_basic_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated

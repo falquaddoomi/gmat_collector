@@ -45,6 +45,9 @@ class Student(db.Model):
             .order_by(desc(Reminder.created_at)) \
             .first()
 
+    def last_practice(self):
+        return self.practices.order_by(desc(Practice.taken_on)).first()
+
     def __repr__(self):
         return "<Student w/Code: %s>" % self.code
 
@@ -56,12 +59,17 @@ class VeritasAccount(db.Model):
 
     student_id = db.Column(db.Integer, db.ForeignKey("student.id", ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
+
 class Reminder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     remind_time = db.Column(db.String(40))
 
     student_id = db.Column(db.Integer, db.ForeignKey('student.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+
+    def remind_time_normalized(self):
+        hours, minutes = self.remind_time.split(":")[:2]
+        return datetime.time(hour=int(hours), minute=int(minutes))
 
 
 class Practice(db.Model):

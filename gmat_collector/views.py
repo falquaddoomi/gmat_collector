@@ -25,6 +25,11 @@ def dashboard():
     return render_template('dashboard.html', **context)
 
 
+@app.route('/hcf')
+def halt_catch_fire():
+    raise Exception("hey, this is a test")
+
+
 @app.route('/scrape/<user_code>')
 def scrape_veritas(user_code):
     try:

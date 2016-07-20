@@ -25,13 +25,32 @@ def dashboard():
     return render_template('dashboard.html', **context)
 
 
+@app.route('/dashboard/student/<code>')
+@requires_basic_auth
+def dashboard_userinfo(code):
+    context = {
+        'user': Student.query.filter(Student.code == code).first()
+    }
+
+    return render_template('user_info.html', **context)
+
+
 @app.route('/scrape/<user_code>')
 def scrape_veritas(user_code):
+    print "About to scrape for code %s" % user_code
+
     try:
         student = Student.query.filter(Student.code == user_code).first()
+        print "Got student: %s" % str(student)
         chain = tasks.scrape_veritas.s(student.account.email, student.account.password) | tasks.update_student.s(student.id)
-        result = chain()
+        defer = chain()
 
-        return jsonify({'practices_updated': result.wait()})
+        print "Waiting on chain result: %s" % str(defer)
+
+        result = defer.wait()
+
+        print "Got result: %s" % result
+
+        return jsonify({'practices_updated': result})
     except Exception as ex:
         return jsonify({'error': str(ex)})

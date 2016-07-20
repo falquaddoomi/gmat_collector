@@ -1,4 +1,5 @@
 import json
+import subprocess
 
 from datetime import datetime, timedelta
 
@@ -48,7 +49,7 @@ app.config.update(
     CELERY_BROKER_URL='redis://localhost:6379',
     CELERY_RESULT_BACKEND='redis://localhost:6379',
     CELERY_DEFAULT_QUEUE='gmat_queue',
-    CELERYD_MAX_TASKS_PER_CHILD=1,
+    # CELERYD_MAX_TASKS_PER_CHILD=1,
     CELERYBEAT_SCHEDULE={
         'scrape-all-students': {
             'task': 'gmat_collector.tasks.scrape_all_students',
@@ -75,6 +76,16 @@ SPIDER_FILE = "%s/gmat_collector/scrapers/veritas.py" % BASE
 ACCT_SPIDER_FILE = "%s/gmat_collector/scrapers/account_creator.py" % BASE
 
 scrapy_encoder = ScrapyJSONEncoder()
+
+
+def runSubprocScraper(spider_file, username, password):
+    cmd = "%(cmd)s runspider %(spider_file)s -a username=%(username)s -a password=%(password)s -o - -t json" % {
+        'cmd': SCRAPY_BIN,
+        'spider_file': spider_file,
+        'username': username,
+        'password': password
+    }
+    return json.loads(subprocess.check_output(cmd.split()))
 
 
 def runSpider(spider_cls, *args, **kwargs):
@@ -117,7 +128,8 @@ def associate_veritas_account(student_id, username, password):
 
     print "About to get credentials for student %d..." % student_id
 
-    results = runSpider(VeritasAccountCreator, username, password)
+    # results = runSpider(VeritasAccountCreator, username, password)
+    results = runSubprocScraper(ACCT_SPIDER_FILE, username, password)
 
     try:
         creds = results[0]
@@ -139,7 +151,8 @@ def associate_veritas_account(student_id, username, password):
 @celery.task()
 def scrape_veritas(username, password):
     print "About to scrape for student w/username %s..." % username
-    results = runSpider(VeritasScraper, username, password)
+    # results = runSpider(VeritasScraper, username, password)
+    results = runSubprocScraper(SPIDER_FILE, username, password)
     print "Got results for username %s: %s" % (username, results)
 
     return results

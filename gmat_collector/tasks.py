@@ -1,15 +1,26 @@
-import subprocess
 import json
 
 from datetime import datetime, timedelta
 
+from billiard import Process
 from celery.schedules import crontab
 from dateutil.parser import parse
 from celery import Celery, group
 from celery.utils.log import get_task_logger
 
+from twisted.internet import reactor
+from scrapy.utils.project import get_project_settings
+
 from gmat_collector import app
 from gmat_collector.models import db, Student, Practice, VeritasAccount
+
+import scrapy
+from scrapy.utils.serialize import ScrapyJSONEncoder
+from scrapy.signals import item_scraped, spider_closed
+from scrapy.crawler import CrawlerProcess, Crawler
+
+from gmat_collector.scrapers.account_creator import VeritasAccountCreator
+from gmat_collector.scrapers.veritas import VeritasScraper
 
 SCRAPE_BACKOFF_MINUTES = 15 # amount of minutes after scraping to not re-scrape a user's data
 
@@ -36,6 +47,8 @@ def make_celery(app):
 app.config.update(
     CELERY_BROKER_URL='redis://localhost:6379',
     CELERY_RESULT_BACKEND='redis://localhost:6379',
+    CELERY_DEFAULT_QUEUE='gmat_queue',
+    CELERYD_MAX_TASKS_PER_CHILD=1,
     CELERYBEAT_SCHEDULE={
         'scrape-all-students': {
             'task': 'gmat_collector.tasks.scrape_all_students',
@@ -61,6 +74,36 @@ SCRAPY_BIN = "%s/.venv/bin/scrapy" % BASE
 SPIDER_FILE = "%s/gmat_collector/scrapers/veritas.py" % BASE
 ACCT_SPIDER_FILE = "%s/gmat_collector/scrapers/account_creator.py" % BASE
 
+scrapy_encoder = ScrapyJSONEncoder()
+
+
+def runSpider(spider_cls, *args, **kwargs):
+    """
+    Helper method that starts a spider with the given init arguments, waits for it to complete, and returns the
+    items it yielded in a list.
+    :param spider_cls: the spider class to run
+    :param args: the indexed arguments to the spider
+    :param kwargs: the keyword arguments to the spider
+    :return: a list of items yielded by the spider
+    """
+    process = CrawlerProcess()
+    process.crawl(spider_cls, *args, **kwargs)
+
+    final_result = []
+
+    def _nab_item(item):
+        # FIXME: this silly dance of encoding and decoding is to prevent scrapy items from being returned to celery
+        # FIXME: celery can't serialize them, so it throws a rather opaque error, but it's fine with lists and dicts
+        final_result.append(json.loads(scrapy_encoder.encode(item)))
+
+    for crawler in process.crawlers:
+        crawler.signals.connect(_nab_item, item_scraped)
+
+    process.start()
+    process.stop()
+
+    return final_result
+
 
 @celery.task()
 def ping():
@@ -74,16 +117,10 @@ def associate_veritas_account(student_id, username, password):
 
     print "About to get credentials for student %d..." % student_id
 
-    cmd = "%(cmd)s runspider %(spider_file)s -a username=%(username)s -a password=%(password)s -o - -t json" % {
-        'cmd': SCRAPY_BIN,
-        'spider_file': ACCT_SPIDER_FILE,
-        'username': username,
-        'password': password
-    }
-    result = subprocess.check_output(cmd.split())
+    results = runSpider(VeritasAccountCreator, username, password)
 
     try:
-        creds = json.loads(result)[0]
+        creds = results[0]
 
         print "Received credentials: %s" % str(creds)
 
@@ -101,20 +138,11 @@ def associate_veritas_account(student_id, username, password):
 
 @celery.task()
 def scrape_veritas(username, password):
-    cmd = "%(cmd)s runspider %(spider_file)s -a username=%(username)s -a password=%(password)s -o - -t json" % {
-        'cmd': SCRAPY_BIN,
-        'spider_file': SPIDER_FILE,
-        'username': username,
-        'password': password
-    }
-    result = subprocess.check_output(cmd.split())
+    print "About to scrape for student w/username %s..." % username
+    results = runSpider(VeritasScraper, username, password)
+    print "Got results for username %s: %s" % (username, results)
 
-    try:
-        return json.loads(result)
-    except ValueError as ex:
-        logger.warn("ValueError encountered during scrape: %s" % str(ex))
-        logger.warn("Couldn't scrape practice sets for %s, continuing..." % username)
-        return []
+    return results
 
 
 @celery.task()

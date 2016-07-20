@@ -14,6 +14,8 @@ class PracticeSession(scrapy.Item):
     percent_correct = scrapy.Field()
     duration = scrapy.Field()
 
+# the number of items displayed on a single page; if we see a pager, we know there are at least this many items
+PAGE_SIZE = 20
 
 class VeritasScraper(scrapy.Spider):
     name = 'veritas'
@@ -45,18 +47,26 @@ class VeritasScraper(scrapy.Spider):
         # body > div.container > div.page-body > table > tbody
         # practices = response.xpath('/html/body/div[2]/div[3]/table/tbody/tr')
         practices = response.xpath('//*[@id="primary"]/table/tbody/tr')
-        total = len(practices)
 
-        for i, row in enumerate(practices):
+        # if the page contains //*[@id="primary"]/div[1]/div which is the paginator, we have to do those pages as well
+        # the selector for the actual link: //*[@id="primary"]/div[1]/div/ul/*/a
+
+        # keeps track of the quiz index so we can avoid re-inserting a previously scraped quiz
+        i = 0
+
+        for row in practices:
             cells = [x.strip() for x in row.css('td::text').extract() if x.strip() != '']
             self.log("Cells: %s" % str(cells))
 
             if 'Not finished' in cells[2]:
                 continue
 
+            # increment i as we move through the records
+            i += 1
+
             r = PracticeSession()
             r['student'] = self.username
-            r['quiz_index'] = total - i
+            r['quiz_index'] = i
 
             # attempt to see if the date in parentheses is more specific
             # than the month-day specifier (e.g. 'hours ago'), and use it if so.
@@ -69,6 +79,9 @@ class VeritasScraper(scrapy.Spider):
                     else parse_datetime(cells[0])
             except IndexError:
                 r['taken_on'] = parse_datetime(cells[0])
+
+            # convert to UTC time string
+            r['taken_on'] = r['taken_on'].utcnow().isoformat()
 
             r['question_count'] = int(cells[1])
             r['percent_correct'] = cells[2]

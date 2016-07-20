@@ -31,8 +31,8 @@
             <th>Password</th>
             <th>Has Contingency</th>
             <th>Has Deadline</th>
+            <th>Active Reminder</th>
             <th>Last Practice</th>
-{#            <th>&nbsp;</th>#}
         </tr>
     </thead>
 
@@ -40,13 +40,13 @@
         {% for user in users %}
             <tr>
                 <td>{{ loop.index }}</td>
-                <td>{{ user.code }}</td>
+                <td><a href="{{ url_for('dashboard_userinfo', code=user.code) }}">{{  user.code }}</a></td>
                 <td>{{ user.account.email }}</td>
                 <td>{{ user.account.password }}</td>
                 <td>{{ user.has_contingency }}</td>
                 <td>{{ user.has_deadline }}</td>
+                <td>{% if user.active_reminder() %}{{ user.active_reminder().remind_time_normalized().strftime('%-I:%M %p') }}{% endif %}</td>
                 <td>{% if user.last_practice().taken_on %}{{ user.last_practice().taken_on.strftime('%Y/%m/%d, %-I:%M %p') }}{% endif %}</td>
-{#                <td>(<a class="practice-displayer" data-target-id="{{ user.id }}" href="#">view practices</a>)</td>#}
             </tr>
 
 {#            <tr id="{{ user.id }}-practice" class="practice-list" style="display: none;">#}

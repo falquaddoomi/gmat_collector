@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block subsection %}:: user {{ user.code }} info{% endblock %}
+
+{% block script %}
+    <script type="text/javascript">
+    $(document).ready(function() {
+        $('#practices-table').DataTable({
+            paging: false,
+            searching: false
+        });
+
+        $('#reminder-table').DataTable({
+            paging: false,
+            searching: false
+        });
+
+{#        $(".practice-displayer").click(function() {#}
+{#            $(".practice-list:visible").not("#" + $(this).data("target-id") + "-practice").hide();#}
+{#            $("#" + $(this).data("target-id") + "-practice").toggle(200);#}
+{#        });#}
+    });
+    </script>
+{% endblock %}
+
+{% block content %}
+<h1>Details for Student #{{ user.code }}</h1>
+
+<p>Practice sessions and reminder log for student #{{ user.code }} is listed below.</p>
+<p><a href="{{ url_for('dashboard') }}">return to user list</a></p>
+
+<h3>Practice Log</h3>
+
+<table id="practices-table" class="table table-striped">
+    <thead>
+        <tr>
+            <th>Quiz Index</th>
+            <th>Taken on</th>
+            <th>Reminder When Taken</th>
+            <th>Question Count</th>
+            <th>Score</th>
+            <th>Duration</th>
+        </tr>
+    </thead>
+
+    <tbody>
+    {% for practice in user.practices %}
+        <tr>
+            <td>{{ practice.quiz_index }}</td>
+            <td>{% if practice.taken_on %}{{ practice.taken_on.strftime('%Y/%m/%d, %-I:%M %p') }}{% endif %}</td>
+            <td>
+                {% with remind_time = practice.reminder_when_taken() %}
+                    {% if remind_time %}
+                        {{ remind_time.remind_time_normalized().strftime('%-I:%M %p') }}
+                    {% else %}
+                        <i>no reminder specified</i>
+                    {% endif %}
+                {% endwith %}
+            </td>
+            <td>{{ practice.question_count }}</td>
+            <td>{{ practice.percent_correct }}</td>
+            <td>{{ practice.duration }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<h3>Reminder Log</h3>
+
+<table id="reminder-table" class="table table-striped">
+    <thead>
+        <tr>
+            <th>Created on</th>
+            <th>Reminder Time</th>
+        </tr>
+    </thead>
+
+    <tbody>
+    {% for reminder in user.reminders %}
+        <tr>
+            <td>{{ reminder.created_at.strftime('%Y/%m/%d, %-I:%M %p') }}</td>
+            <td>{{ reminder.remind_time_normalized().strftime('%-I:%M %p') }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<footer style="margin-top: 1em; margin-bottom: 2em; color: #aaa; font-size: smaller; text-align: right;">(c) smalldatalab 2016</footer>
+{% endblock %}

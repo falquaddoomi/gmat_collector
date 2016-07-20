@@ -25,6 +25,7 @@ def dashboard():
     return render_template('dashboard.html', **context)
 
 
+
 @app.route('/dashboard/student/<code>')
 @requires_basic_auth
 def dashboard_userinfo(code):

@@ -23,7 +23,7 @@ from scrapy.crawler import CrawlerProcess, Crawler
 from gmat_collector.scrapers.account_creator import VeritasAccountCreator
 from gmat_collector.scrapers.veritas import VeritasScraper
 
-SCRAPE_BACKOFF_MINUTES = 15 # amount of minutes after scraping to not re-scrape a user's data
+SCRAPE_BACKOFF_MINUTES = 30 # amount of minutes after scraping to not re-scrape a user's data
 
 # =====================================================================================================================
 # === general celery app configuration

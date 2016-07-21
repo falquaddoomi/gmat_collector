@@ -184,7 +184,7 @@ def update_student(practice_set, student_id):
         taken_on = parse(p['taken_on'])
         generated_print = gen_fingerprint(student_id, taken_on, p['question_count'], p['percent_correct'], p['duration'])
 
-        if not student.practices.filter(Practice.fingerprint == generated_print).exists():
+        if student.practices.filter(Practice.fingerprint == generated_print).count() <= 0:
             db.session.add(Practice(
                 student=student,
                 taken_on=taken_on,

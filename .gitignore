@@ -5,5 +5,6 @@ Thumbs.db
 /.idea
 /celerybeat-schedule
 *.db
+/.venv
 
 /gmat_collector/config.py

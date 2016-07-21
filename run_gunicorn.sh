@@ -1,7 +1,8 @@
 #!/bin/bash
 
 WORKERS=4
-WORKER_CLASS="gevent"
+# WORKER_CLASS="gevent"
+WORKER_CLASS="sync"
 PORT=5580
 
 cd /home/ec2-user/projects/gmat_collector

@@ -73,16 +73,16 @@ class Reminder(db.Model):
 
 
 class Practice(db.Model):
-    __table_args__ = (db.UniqueConstraint('quiz_index', 'student_id'), {})
-
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
-    quiz_index = db.Column(db.Integer)
     taken_on = db.Column(db.DateTime)
     question_count = db.Column(db.Integer)
     percent_correct = db.Column(db.String(40))
     duration = db.Column(db.String(40))
+
+    # hopefully unique value that will determine whether the quiz has already been inserted
+    fingerprint = db.Column(db.String(), unique=True)
 
     student_id = db.Column(db.Integer, db.ForeignKey('student.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 

@@ -6,12 +6,12 @@
     <script type="text/javascript">
     $(document).ready(function() {
         $('#practices-table').DataTable({
-            paging: false,
+            paging: true,
             searching: false
         });
 
         $('#reminder-table').DataTable({
-            paging: false,
+            paging: true,
             searching: false
         });
 
@@ -34,7 +34,6 @@
 <table id="practices-table" class="table table-striped">
     <thead>
         <tr>
-            <th>Quiz Index</th>
             <th>Taken on</th>
             <th>Reminder When Taken</th>
             <th>Question Count</th>
@@ -46,7 +45,6 @@
     <tbody>
     {% for practice in user.practices %}
         <tr>
-            <td>{{ practice.quiz_index }}</td>
             <td>{% if practice.taken_on %}{{ practice.taken_on.strftime('%Y/%m/%d, %-I:%M %p') }}{% endif %}</td>
             <td>
                 {% with remind_time = practice.reminder_when_taken() %}

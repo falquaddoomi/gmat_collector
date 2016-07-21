@@ -63,12 +63,12 @@ app.config.update(
 )
 celery = make_celery(app)
 
-
-# =====================================================================================================================
-# === task definitions
-# =====================================================================================================================
-
 logger = get_task_logger(__name__)
+
+
+# =====================================================================================================================
+# === scrapy helpers
+# =====================================================================================================================
 
 BASE = "/home/ec2-user/projects/gmat_collector/"
 SCRAPY_BIN = "%s/.venv/bin/scrapy" % BASE
@@ -79,16 +79,25 @@ scrapy_encoder = ScrapyJSONEncoder()
 
 
 def runSubprocScraper(spider_file, username, password):
-    cmd = "%(cmd)s runspider %(spider_file)s -a username=%(username)s -a password=%(password)s -o - -t json" % {
+    cmd = "%(cmd)s runspider %(spider_file)s -L WARNING -a username=%(username)s -a password=%(password)s -o - -t json" % {
         'cmd': SCRAPY_BIN,
         'spider_file': spider_file,
         'username': username,
         'password': password
     }
-    return json.loads(subprocess.check_output(cmd.split()))
+    subproc_out = subprocess.check_output(cmd.split())
+    print "Subprocess output: %s" % subproc_out
+
+    try:
+        json_data = json.loads(subproc_out)
+        return json_data
+    except ValueError as ex:
+        # FIXME: if scrapy doesn't yield anything, it just emits a single [ without a closing ]; why does it do that?
+        print "ERROR when parsing subproc response: %s" % str(ex)
+        return []
 
 
-def runSpider(spider_cls, *args, **kwargs):
+def runSpiderProcess(spider_cls, *args, **kwargs):
     """
     Helper method that starts a spider with the given init arguments, waits for it to complete, and returns the
     items it yielded in a list.
@@ -115,6 +124,10 @@ def runSpider(spider_cls, *args, **kwargs):
 
     return final_result
 
+
+# =====================================================================================================================
+# === task definitions
+# =====================================================================================================================
 
 @celery.task()
 def ping():
@@ -158,20 +171,27 @@ def scrape_veritas(username, password):
     return results
 
 
+def gen_fingerprint(student_id, taken_on, question_count, percent_correct, duration):
+    return "%s-%s-%s-%s-%s" % (student_id, taken_on.strftime("%Y.%m.%d"), question_count, percent_correct, duration)
+
+
 @celery.task()
 def update_student(practice_set, student_id):
     student = Student.query.get(student_id)
     inserted = 0
 
     for p in practice_set:
-        if student.practices.filter(Practice.quiz_index == p['quiz_index']).count() <= 0:
+        taken_on = parse(p['taken_on'])
+        generated_print = gen_fingerprint(student_id, taken_on, p['question_count'], p['percent_correct'], p['duration'])
+
+        if not student.practices.filter(Practice.fingerprint == generated_print).exists():
             db.session.add(Practice(
                 student=student,
-                quiz_index=p['quiz_index'],
-                taken_on=parse(p['taken_on']),
+                taken_on=taken_on,
                 question_count=p['question_count'],
                 percent_correct=p['percent_correct'],
-                duration=p['duration']
+                duration=p['duration'],
+                fingerprint=generated_print
             ))
             inserted += 1
 

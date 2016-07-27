@@ -46,8 +46,8 @@ def make_celery(app):
 
 
 app.config.update(
-    CELERY_BROKER_URL='redis://localhost:6379',
-    CELERY_RESULT_BACKEND='redis://localhost:6379',
+    CELERY_BROKER_URL='redis://localhost:6379/1',
+    CELERY_RESULT_BACKEND='redis://localhost:6379/1',
     CELERY_DEFAULT_QUEUE='gmat_queue',
     # CELERYD_MAX_TASKS_PER_CHILD=1,
     CELERYBEAT_SCHEDULE={
@@ -60,6 +60,12 @@ app.config.update(
     CELERY_ACCEPT_CONTENT=['json'],
     CELERY_TASK_SERIALIZER='json',
     CELERY_RESULT_SERIALIZER='json',
+
+    BROKER_TRANSPORT_OPTIONS={
+        'fanout_prefix': True,
+        'fanout_patterns': True,
+        'visibility_timeout': 43200
+    }
 )
 celery = make_celery(app)
 

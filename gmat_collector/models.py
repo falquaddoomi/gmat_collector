@@ -81,6 +81,8 @@ class Practice(db.Model):
     percent_correct = db.Column(db.String(40))
     duration = db.Column(db.String(40))
 
+    app_version = db.Column(db.String())
+
     # hopefully unique value that will determine whether the quiz has already been inserted
     fingerprint = db.Column(db.String(), unique=True)
 

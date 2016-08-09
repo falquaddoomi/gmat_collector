@@ -34,6 +34,7 @@
 <table id="practices-table" class="table table-striped">
     <thead>
         <tr>
+            <th>ID</th>
             <th>Taken on</th>
             <th>Reminder When Taken</th>
             <th>Question Count</th>
@@ -45,7 +46,8 @@
     <tbody>
     {% for practice in user.practices %}
         <tr>
-            <td>{% if practice.taken_on %}{{ practice.taken_on.strftime('%Y/%m/%d, %-I:%M %p') }}{% endif %}</td>
+            <td>{{ practice.id }}</td>
+            <td>{% if practice.taken_on %}{{ practice.taken_on | israeltime | fancydatetime }}{% endif %}</td>
             <td>
                 {% with remind_time = practice.reminder_when_taken() %}
                     {% if remind_time %}
@@ -76,7 +78,7 @@
     <tbody>
     {% for reminder in user.reminders %}
         <tr>
-            <td>{{ reminder.created_at.strftime('%Y/%m/%d, %-I:%M %p') }}</td>
+            <td>{{ reminder.created_at | israeltime | fancydatetime }}</td>
             <td>{{ reminder.remind_time_normalized().strftime('%-I:%M %p') }}</td>
         </tr>
     {% endfor %}

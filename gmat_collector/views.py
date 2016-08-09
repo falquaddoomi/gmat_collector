@@ -5,20 +5,24 @@ import tasks
 from gmat_collector.models import Student
 from gmat_collector.utils import requires_basic_auth
 
+from datetime import datetime
+import pytz
+import dateutil
+
 
 @app.route('/')
 def hello_world():
     # return 'hello gmat'
     return render_template('index.html')
 
-
+# do scrape when this is called
 @app.route('/dashboard')
 @requires_basic_auth
 def dashboard():
     context = {
         'users': (
             Student.query
-                .filter(Student.reason_for_creation == "first_120")
+                # .filter(Student.reason_for_creation == "first_120")
                 .order_by(Student.id))  # type: Student
     }
 
@@ -55,3 +59,13 @@ def scrape_veritas(user_code):
         return jsonify({'practices_updated': result})
     except Exception as ex:
         return jsonify({'error': str(ex)})
+
+
+@app.template_filter('israeltime')
+def _jinja2_filter_israeltime(date, fmt=None):
+    return pytz.utc.localize(date).astimezone(pytz.timezone('Israel'))
+
+
+@app.template_filter('fancydatetime')
+def _jinja2_strformat_datetime(date, fmt=None):
+    return date.strftime('%Y/%m/%d, %-I:%M %p (%Z)')

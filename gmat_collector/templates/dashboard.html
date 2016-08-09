@@ -46,7 +46,9 @@
                 <td>{{ user.has_contingency }}</td>
                 <td>{{ user.has_deadline }}</td>
                 <td>{% if user.active_reminder() %}{{ user.active_reminder().remind_time_normalized().strftime('%-I:%M %p') }}{% endif %}</td>
-                <td>{% if user.last_practice().taken_on %}{{ user.last_practice().taken_on.strftime('%Y/%m/%d, %-I:%M %p') }}{% endif %}</td>
+                <td>
+                <!-- meee:{{user.last_practice().taken_on}} -->
+                  {% if user.last_practice().taken_on %}{{ user.last_practice().taken_on | israeltime | fancydatetime }}{% endif %}</td>
             </tr>
 
 {#            <tr id="{{ user.id }}-practice" class="practice-list" style="display: none;">#}

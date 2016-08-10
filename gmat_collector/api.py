@@ -6,7 +6,7 @@ from datetime import datetime
 from flask.ext.restless import ProcessingException
 
 from gmat_collector import app
-from gmat_collector.models import db, Student, Reminder, Practice
+from gmat_collector.models import db, Student, Reminder, Practice, AuditEvent
 from gmat_collector.utils import generate_code
 from gmat_collector.tasks import associate_veritas_account
 
@@ -57,3 +57,5 @@ manager.create_api(Student, methods=['GET'],
 manager.create_api(Reminder, methods=['GET', 'POST'], max_results_per_page=10000)
 
 manager.create_api(Practice, methods=['GET'], include_methods=['reminder_when_taken'])
+
+manager.create_api(AuditEvent, methods=['GET', 'POST'], exclude_columns=['student'], max_results_per_page=10000)

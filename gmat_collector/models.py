@@ -3,6 +3,7 @@ import datetime
 import flask.ext.restless
 import flask.ext.sqlalchemy
 from sqlalchemy import desc
+from sqlalchemy.dialects import postgresql
 
 from gmat_collector import app
 from gmat_collector.utils import generate_code
@@ -48,6 +49,12 @@ class Student(db.Model):
     def last_practice(self):
         return self.practices.order_by(desc(Practice.taken_on)).first()
 
+    def last_event(self, event_type=None):
+        if event_type is not None:
+            return self.audit_events.filter(AuditEvent.type == event_type).order_by(desc(AuditEvent.created_at)).first()
+        else:
+            return self.audit_events.order_by(desc(AuditEvent.created_at)).first()
+
     def __repr__(self):
         return "<Student w/Code: %s>" % self.code
 
@@ -81,8 +88,6 @@ class Practice(db.Model):
     percent_correct = db.Column(db.String(40))
     duration = db.Column(db.String(40))
 
-    app_version = db.Column(db.String())
-
     # hopefully unique value that will determine whether the quiz has already been inserted
     fingerprint = db.Column(db.String(), unique=True)
 
@@ -94,6 +99,18 @@ class Practice(db.Model):
             .order_by(desc(Reminder.created_at)) \
             .filter(Reminder.created_at < self.created_at) \
             .first()
+
+
+class AuditEvent(db.Model):
+    __tablename__ = "audit_event"
+
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    type = db.Column(db.String())
+    data = db.Column(postgresql.JSONB)
+
+    student_id = db.Column(db.ForeignKey('student.id', ondelete='CASCADE', onupdate='CASCADE'), index=True, nullable=False)
+    student = db.relationship('Student', primaryjoin='AuditEvent.student_id == Student.id', backref=db.backref('audit_events'))
 
 
 # make the database if it doesn't already exist

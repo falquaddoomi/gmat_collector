@@ -99,7 +99,7 @@ def runSubprocScraper(spider_file, username, password):
         return json_data
     except ValueError as ex:
         # FIXME: if scrapy doesn't yield anything, it just emits a single [ without a closing ]; why does it do that?
-        print "ERROR when parsing subproc response: %s" % str(ex)
+        print "WARN when parsing subproc response: %s" % str(ex)
         return []
 
 

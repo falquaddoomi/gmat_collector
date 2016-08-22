@@ -22,7 +22,7 @@ def dashboard():
     context = {
         'users': (
             Student.query
-                # .filter(Student.reason_for_creation == "first_120")
+                .filter(Student.reason_for_creation == "first_120")
                 .order_by(Student.id))  # type: Student
     }
 

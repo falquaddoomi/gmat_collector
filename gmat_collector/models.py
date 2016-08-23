@@ -75,8 +75,18 @@ class Reminder(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('student.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     def remind_time_normalized(self):
-        hours, minutes = self.remind_time.split(":")[:2]
-        return datetime.time(hour=int(hours), minute=int(minutes))
+        try:
+            if ':' in self.remind_time:
+                hours, minutes = self.remind_time.split(":")[:2]
+            elif '.' in self.remind_time:
+                hours, minutes = self.remind_time.split(".")[:2]
+            else:
+                raise ValueError("%s doesn't contain hour-minute separator" % self.remind_time)
+
+            return datetime.time(hour=int(hours), minute=int(minutes))
+        except ValueError:
+            print "Invalid time: %s" % self.remind_time
+            raise
 
 
 class Practice(db.Model):

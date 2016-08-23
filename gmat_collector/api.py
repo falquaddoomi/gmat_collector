@@ -47,7 +47,7 @@ manager.create_api(Student, methods=['GET'],
                    exclude_columns=['reminders'],
                    include_methods=['active_reminder', 'code', 'practices.reminder_when_taken'],
                    preprocessors={
-                       'GET_MANY': [pre_get_many],
+                       # 'GET_MANY': [pre_get_many],
                        'POST': [pre_create_user]
                    },
                    postprocessors={

@@ -34,6 +34,7 @@ class VeritasScraper(scrapy.Spider):
         return [FormRequest.from_response(
             response,
             formdata={'username': self.username, 'password': self.password},
+            formnumber=1,
             callback=self.after_login
         )]
 
@@ -60,6 +61,7 @@ class VeritasScraper(scrapy.Spider):
             ]
 
             for page in pages:
+                self.logger.info("about to scrape page %d..." % page)
                 yield Request(url=("http://gmat.veritasprep.com/question-bank/practices?page=%d" % page), callback=self.parse_practices)
         else:
             # there will always be a page 1

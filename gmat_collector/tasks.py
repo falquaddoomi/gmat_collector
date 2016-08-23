@@ -85,7 +85,7 @@ scrapy_encoder = ScrapyJSONEncoder()
 
 
 def runSubprocScraper(spider_file, username, password):
-    cmd = "%(cmd)s runspider %(spider_file)s -L WARNING -a username=%(username)s -a password=%(password)s -o - -t json" % {
+    cmd = "%(cmd)s runspider %(spider_file)s -L DEBUG --logfile veritas_spider.log -a username=%(username)s -a password=%(password)s -o - -t json" % {
         'cmd': SCRAPY_BIN,
         'spider_file': spider_file,
         'username': username,

@@ -197,7 +197,8 @@ def update_student(practice_set, student_id):
                 question_count=p['question_count'],
                 percent_correct=p['percent_correct'],
                 duration=p['duration'],
-                fingerprint=generated_print
+                fingerprint=generated_print,
+                site_practice_id=p['site_practice_id']
             ))
             inserted += 1
 
@@ -222,5 +223,60 @@ def scrape_all_students(force=False):
 
     # create a group of acquire->store chains, which will all be executed in parallel
     tasks = group(scrape_veritas.s(student.account.email, student.account.password) | update_student.s(student.id)
+                  for student in pending_students)
+    tasks.delay()
+
+
+# ===
+# === maintenance task to update practices with the site ID, just so we have it
+# ===
+
+@celery.task()
+def update_student_practice_id(practice_set, student_id):
+    """
+    For the given student and practice set, find existing practices in the database and update their site_practice_id field
+    to what we gather from the site.
+    :param practice_set: the set of scrapy items representing practices from veritas
+    :param student_id: the id of the student to update
+    :return: the number of rows that were updated for the student
+    """
+    student = Student.query.get(student_id)
+    updated = 0
+
+    for p in practice_set:
+        taken_on = parse(p['taken_on'])
+        generated_print = gen_fingerprint(student_id, taken_on, p['question_count'], p['percent_correct'], p['duration'])
+
+        # find an existing record in the db for this user by its fingerprint
+        existing_practices = student.practices.filter(Practice.fingerprint == generated_print)
+        practice_count = existing_practices.count()
+
+        if practice_count == 1:
+            target_practice = existing_practices.first()
+            target_practice.site_practice_id = p['site_practice_id']
+            db.session.add(target_practice)
+            updated += 1
+        elif practice_count < 1:
+            print "WARNING: no practices found with matching fingerprint"
+        elif practice_count > 1:
+            print "ERROR: more than one practice found with a matching fingerprint -- %d, in fact!" % practice_count
+
+    # mark us as having been scraped and commit it
+    # actually, we don't care that they've been scraped
+    # student.last_scraped = datetime.now()
+    db.session.commit()
+
+    return updated
+
+
+@celery.task()
+def update_all_students_site_id():
+    # iterate through each student, launching a scrape task if they've not been scraped recently
+    pending_students = Student.query
+
+    print "Update practice site IDs for %d/%d students!" % (pending_students.count(), Student.query.count())
+
+    # create a group of acquire->store chains, which will all be executed in parallel
+    tasks = group(scrape_veritas.s(student.account.email, student.account.password) | update_student_practice_id.s(student.id)
                   for student in pending_students)
     tasks.delay()

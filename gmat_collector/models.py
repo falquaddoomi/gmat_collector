@@ -101,6 +101,10 @@ class Practice(db.Model):
     # hopefully unique value that will determine whether the quiz has already been inserted
     fingerprint = db.Column(db.String(), unique=True)
 
+    # the actual unique id from the site that was recently discovered...
+    # we'll try to update it if we can
+    site_practice_id = db.Column(db.Integer)
+
     student_id = db.Column(db.Integer, db.ForeignKey('student.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     def reminder_when_taken(self):

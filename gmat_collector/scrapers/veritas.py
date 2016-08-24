@@ -15,6 +15,7 @@ class PracticeSession(scrapy.Item):
     percent_correct = scrapy.Field()
     duration = scrapy.Field()
     fingerprint = scrapy.Field()
+    site_practice_id = scrapy.Field()
 
 # the number of items displayed on a single page; if we see a pager, we know there are at least this many items
 PAGE_SIZE = 20
@@ -97,5 +98,11 @@ class VeritasScraper(scrapy.Spider):
             r['question_count'] = int(cells[1])
             r['percent_correct'] = cells[2]
             r['duration'] = cells[3]
+
+            try:
+                r['site_practice_id'] = int(row.xpath("*/a/@href[contains(., 'practices')]").extract()[0].split('/')[-1])
+            except:
+                # i know it's too broad, but i just want to ignore it if i can't extract it
+                r['site_practice_id'] = None
 
             yield r

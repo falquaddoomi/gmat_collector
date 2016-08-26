@@ -111,7 +111,7 @@ class Practice(db.Model):
         # look up the corresponding student
         return self.student.reminders \
             .order_by(desc(Reminder.created_at)) \
-            .filter(Reminder.created_at < self.created_at) \
+            .filter(Reminder.created_at < self.taken_on) \
             .first()
 
 
